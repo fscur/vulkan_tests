@@ -95,6 +95,8 @@ void window::run()
 {
     while (true)
     {
+        _drawCallback();
+
         MSG msg;
         if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
         {

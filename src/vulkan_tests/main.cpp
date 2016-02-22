@@ -1,5 +1,4 @@
 #include "window.h"
-
 #include "vulkan.h"
 
 #include <iostream>
@@ -14,5 +13,6 @@ int main()
     auto vk = new vulkan(_window);
 
     std::cout << "running" << std::endl;
+    
     _window->run();
 }

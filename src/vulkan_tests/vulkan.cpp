@@ -12,64 +12,131 @@
 #include <sstream>
 #include <vector>
 
+VKAPI_ATTR VkBool32 VKAPI_CALL debugFunc(VkDebugReportFlagsEXT msgFlags, VkDebugReportObjectTypeEXT objType, uint64_t srcObject, size_t location,
+    int32_t msgCode, const char *pLayerPrefix, const char *pMsg, void *pUserData)
+{
+    std::ostringstream message;
+
+    if (msgFlags & VK_DEBUG_REPORT_ERROR_BIT_EXT)
+    {
+        message << "ERROR: " << std::endl;
+    }
+    else if (msgFlags & VK_DEBUG_REPORT_WARNING_BIT_EXT)
+    {
+        message << "WARNING: " << std::endl;
+    }
+    else if (msgFlags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
+    {
+        message << "PERFORMANCE WARNING: " << std::endl;
+    }
+    else if (msgFlags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT)
+    {
+        message << "INFO: " << std::endl;
+    }
+    else if (msgFlags & VK_DEBUG_REPORT_DEBUG_BIT_EXT)
+    {
+        message << "DEBUG: " << std::endl;
+    }
+
+    message << "[" << pLayerPrefix << "] Code " << msgCode << ": " << std::endl << pMsg;
+
+    std::cerr << message.str() << std::endl << std::endl;
+    /*
+    * false indicates that layer should not bail-out of an
+    * API call that had validation failures. This may mean that the
+    * app dies inside the driver due to invalid parameter(s).
+    * That's what would happen without validation layers, so we'll
+    * keep that behavior here.
+    */
+    return false;
+}
+
 vulkan::vulkan(window* window) :
     _window(window),
     _vertexShader(""),
     _fragmentShader("")
 {
     _enabledLayers.push_back("VK_LAYER_LUNARG_standard_validation");
-    _vertexShader = shaderLoader::load("C:\\Users\\Patrick\\Workspaces\\vulkan_tests\\resources\\shaders\\basic.vert");
-    _fragmentShader = shaderLoader::load("C:\\Users\\Patrick\\Workspaces\\vulkan_tests\\resources\\shaders\\basic.frag");
+    _vertexShader = shaderLoader::load("..\\..\\resources\\shaders\\basic.vert");
+    _fragmentShader = shaderLoader::load("..\\..\\resources\\shaders\\basic.frag");
 
     assert(_vertexShader != "");
     assert(_fragmentShader != "");
 
     initGlobalLayerProperties();
-    initInstance();
+    createInstance();
     initEnumerateDevice();
     initSwapchainExtension();
-    initDevice();
+    createDevice();
     registerDebugCallback();
-    initCommandPool();
-    initCommandBuffer();
-    executeBeginCommandBuffer();
-    initDeviceQueue();
+    createCommandPool();
+    createCommandBuffer();
+    createDeviceQueue();
     initSwapChain();
     initDepthBuffer();
     initUniformBuffer();
-    initDescriptorAndPipelineLayouts();
-    initRenderpass();
+    createDescriptorAndPipelineLayouts();
+    createRenderpass();
     initShaders();
     initFramebuffers();
     initVertexBuffer();
-    initDescriptorPool();
-    initDescriptorSet();
-    initPipelineCache();
-    initPipeline();
-    draw();
+    createDescriptorPool();
+    createDescriptorSet();
+    createPipelineCache();
+    createPipeline();
+
+    _window->setDrawCallback([&]
+    {
+        buildCommandBuffer();
+        draw();
+    });
 }
 
 vulkan::~vulkan()
 {
-    /*vkDestroySemaphore(info.device, presentCompleteSemaphore, NULL);
-    vkDestroyFence(info.device, drawFence, NULL);
-    destroy_pipeline(info);
-    destroy_pipeline_cache(info);
-    destroy_descriptor_pool(info);
-    destroy_vertex_buffer(info);
-    destroy_framebuffers(info);
-    destroy_shaders(info);
-    destroy_renderpass(info);
-    destroy_descriptor_and_pipeline_layouts(info);
-    destroy_uniform_buffer(info);
-    destroy_depth_buffer(info);
-    destroy_swap_chain(info);
-    destroy_command_buffer(info);
-    destroy_command_pool(info);
-    destroy_window(info);
-    destroy_device(info);
-    destroy_instance(info);*/
+    vkDestroySemaphore(_device, _presentCompleteSemaphore, NULL);
+    vkDestroyFence(_device, _drawFence, NULL);
+    vkDestroyPipeline(_device, _pipeline, NULL);
+    vkDestroyPipelineCache(_device, _pipelineCache, NULL);
+    vkDestroyDescriptorPool(_device, _descriptorPool, NULL);
 
+    vkDestroyBuffer(_device, _vertexBuffer.buf, NULL);
+    vkFreeMemory(_device, _vertexBuffer.mem, NULL);
+
+    for (uint32_t i = 0; i < _swapchainImageCount; i++)
+    {
+        vkDestroyFramebuffer(_device, _frameBuffers[i], NULL);
+    }
+    free(_frameBuffers);
+
+    vkDestroyShaderModule(_device, _shaderStages[0].module, NULL);
+    vkDestroyShaderModule(_device, _shaderStages[1].module, NULL);
+
+    vkDestroyRenderPass(_device, _renderPass, NULL);
+
+    for (int i = 0; i < NUM_DESCRIPTOR_SETS; i++)
+    {
+        vkDestroyDescriptorSetLayout(_device, _descriptorLayouts[i], NULL);
+    }
+
+    vkDestroyPipelineLayout(_device, _pipelineLayout, NULL);
+
+    vkDestroyBuffer(_device, _uniformData.buf, NULL);
+    vkFreeMemory(_device, _uniformData.mem, NULL);
+
+    vkDestroyImageView(_device, _depth.view, NULL);
+    vkDestroyImage(_device, _depth.image, NULL);
+    vkFreeMemory(_device, _depth.mem, NULL);
+
+    for (uint32_t i = 0; i < _swapchainImageCount; i++)
+    {
+        vkDestroyImageView(_device, _swapchainBuffers[i].view, NULL);
+    }
+    vkDestroySwapchainKHR(_device, _swapchain, NULL);
+
+    vkFreeCommandBuffers(_device, _commandPool, 1, &_commandBuffer);
+    vkDestroyCommandPool(_device, _commandPool, NULL);
+    vkDestroyDevice(_device, NULL);
     _destroyDebugReportCallback(_vkInstance, _debugReportCallback, NULL);
     vkDestroyInstance(_vkInstance, NULL);
 }
@@ -123,7 +190,7 @@ void vulkan::initGlobalLayerProperties()
     free(vulkanProperties);
 }
 
-void vulkan::initInstance()
+void vulkan::createInstance()
 {
     VkApplicationInfo appInfo = {};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -152,23 +219,26 @@ void vulkan::initInstance()
 
 void vulkan::initEnumerateDevice()
 {
-    vkEnumeratePhysicalDevices(_vkInstance, &_gpusCount, NULL);
-    assert(_gpusCount);
+    uint32_t gpusCount;
+    vkEnumeratePhysicalDevices(_vkInstance, &gpusCount, NULL);
+    assert(gpusCount);
 
-    _gpus = new VkPhysicalDevice[_gpusCount];
-    vkEnumeratePhysicalDevices(_vkInstance, &_gpusCount, _gpus);
+    auto gpus = new VkPhysicalDevice[gpusCount];
+    vkEnumeratePhysicalDevices(_vkInstance, &gpusCount, gpus);
 
-    vkGetPhysicalDeviceQueueFamilyProperties(_gpus[0], &_queueCount, NULL);
+    _gpu = gpus[0];
+
+    vkGetPhysicalDeviceQueueFamilyProperties(_gpu, &_queueCount, NULL);
     assert(_queueCount >= 1);
 
     _queueProperties = new VkQueueFamilyProperties[_queueCount];
-    vkGetPhysicalDeviceQueueFamilyProperties(_gpus[0], &_queueCount, _queueProperties);
+    vkGetPhysicalDeviceQueueFamilyProperties(_gpu, &_queueCount, _queueProperties);
     assert(_queueCount >= 1);
 
     _memoryProperties = new VkPhysicalDeviceMemoryProperties();
     _deviceProperties = new VkPhysicalDeviceProperties();
-    vkGetPhysicalDeviceMemoryProperties(_gpus[0], _memoryProperties);
-    vkGetPhysicalDeviceProperties(_gpus[0], _deviceProperties);
+    vkGetPhysicalDeviceMemoryProperties(_gpu, _memoryProperties);
+    vkGetPhysicalDeviceProperties(_gpu, _deviceProperties);
 }
 
 void vulkan::initSwapchainExtension()
@@ -188,7 +258,7 @@ void vulkan::initSwapchainExtension()
     auto supportsPresent = new VkBool32(_queueCount);
     for (uint32_t i = 0; i < _queueCount; i++)
     {
-        vkGetPhysicalDeviceSurfaceSupportKHR(_gpus[0], i, _surface, &supportsPresent[i]);
+        vkGetPhysicalDeviceSurfaceSupportKHR(_gpu, i, _surface, &supportsPresent[i]);
     }
 
     // Search for a graphics queue and a present queue in the array of queue
@@ -220,11 +290,12 @@ void vulkan::initSwapchainExtension()
 
     // Get the list of VkFormats that are supported:
     uint32_t formatCount;
-    res = vkGetPhysicalDeviceSurfaceFormatsKHR(_gpus[0], _surface, &formatCount, NULL);
+    res = vkGetPhysicalDeviceSurfaceFormatsKHR(_gpu, _surface, &formatCount, NULL);
     assert(res == VK_SUCCESS);
+    assert(formatCount >= 1);
 
     auto surfaceFormats = new VkSurfaceFormatKHR[formatCount];
-    res = vkGetPhysicalDeviceSurfaceFormatsKHR(_gpus[0], _surface, &formatCount, surfaceFormats);
+    res = vkGetPhysicalDeviceSurfaceFormatsKHR(_gpu, _surface, &formatCount, surfaceFormats);
     assert(res == VK_SUCCESS);
 
     // If the format list includes just one entry of VK_FORMAT_UNDEFINED,
@@ -236,12 +307,11 @@ void vulkan::initSwapchainExtension()
     }
     else
     {
-        assert(formatCount >= 1);
         _format = surfaceFormats[0].format;
     }
 }
 
-void vulkan::initDevice()
+void vulkan::createDevice()
 {
     VkDeviceQueueCreateInfo queueInfo = {};
 
@@ -262,54 +332,8 @@ void vulkan::initDevice()
     deviceInfo.ppEnabledExtensionNames = new char*[1]{ VK_KHR_SWAPCHAIN_EXTENSION_NAME };
     deviceInfo.pEnabledFeatures = NULL;
 
-    auto result = vkCreateDevice(_gpus[0], &deviceInfo, NULL, &_device);
+    auto result = vkCreateDevice(_gpu, &deviceInfo, NULL, &_device);
     assert(result == VK_SUCCESS);
-}
-
-VKAPI_ATTR VkBool32 VKAPI_CALL debugFunc(
-    VkDebugReportFlagsEXT msgFlags,
-    VkDebugReportObjectTypeEXT objType,
-    uint64_t srcObject,
-    size_t location,
-    int32_t msgCode,
-    const char *pLayerPrefix,
-    const char *pMsg,
-    void *pUserData)
-{
-    std::ostringstream message;
-
-    if (msgFlags & VK_DEBUG_REPORT_ERROR_BIT_EXT)
-    {
-        message << "ERROR: " << std::endl;
-    }
-    else if (msgFlags & VK_DEBUG_REPORT_WARNING_BIT_EXT)
-    {
-        message << "WARNING: " << std::endl;
-    }
-    else if (msgFlags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
-    {
-        message << "PERFORMANCE WARNING: " << std::endl;
-    }
-    else if (msgFlags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT)
-    {
-        message << "INFO: " << std::endl;
-    }
-    else if (msgFlags & VK_DEBUG_REPORT_DEBUG_BIT_EXT)
-    {
-        message << "DEBUG: " << std::endl;
-    }
-
-    message << "[" << pLayerPrefix << "] Code " << msgCode << ": " << std::endl << pMsg;
-
-    std::cerr << message.str() << std::endl << std::endl;
-    /*
-    * false indicates that layer should not bail-out of an
-    * API call that had validation failures. This may mean that the
-    * app dies inside the driver due to invalid parameter(s).
-    * That's what would happen without validation layers, so we'll
-    * keep that behavior here.
-    */
-    return false;
 }
 
 void vulkan::registerDebugCallback()
@@ -339,7 +363,7 @@ void vulkan::registerDebugCallback()
     assert(result == VK_SUCCESS);
 }
 
-void vulkan::initCommandPool()
+void vulkan::createCommandPool()
 {
     VkCommandPoolCreateInfo commandPoolnfo = {};
 
@@ -347,12 +371,12 @@ void vulkan::initCommandPool()
     commandPoolnfo.pNext = NULL;
     commandPoolnfo.queueFamilyIndex = _graphicsQueueFamilyIndex;
     commandPoolnfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    
+
     auto result = vkCreateCommandPool(_device, &commandPoolnfo, NULL, &_commandPool);
     assert(result == VK_SUCCESS);
 }
 
-void vulkan::initCommandBuffer()
+void vulkan::createCommandBuffer()
 {
     VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
     commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -365,19 +389,7 @@ void vulkan::initCommandBuffer()
     assert(result == VK_SUCCESS);
 }
 
-void vulkan::executeBeginCommandBuffer()
-{
-    VkCommandBufferBeginInfo commandBufferBeginInfo = {};
-    commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    commandBufferBeginInfo.pNext = NULL;
-    commandBufferBeginInfo.flags = 0;
-    commandBufferBeginInfo.pInheritanceInfo = NULL;
-
-    auto result = vkBeginCommandBuffer(_commandBuffer, &commandBufferBeginInfo);
-    assert(result == VK_SUCCESS);
-}
-
-void vulkan::initDeviceQueue()
+void vulkan::createDeviceQueue()
 {
     vkGetDeviceQueue(_device, _graphicsQueueFamilyIndex, 0, &_queue);
 }
@@ -386,16 +398,16 @@ void vulkan::initSwapChain()
 {
     VkResult result;
     VkSurfaceCapabilitiesKHR surfaceCapabilities;
-    result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_gpus[0], _surface, &surfaceCapabilities);
+    result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_gpu, _surface, &surfaceCapabilities);
     assert(result == VK_SUCCESS);
 
     uint32_t presentModeCount;
-    result = vkGetPhysicalDeviceSurfacePresentModesKHR(_gpus[0], _surface, &presentModeCount, NULL);
+    result = vkGetPhysicalDeviceSurfacePresentModesKHR(_gpu, _surface, &presentModeCount, NULL);
     assert(result == VK_SUCCESS);
 
     auto presentModes = new VkPresentModeKHR[presentModeCount];
     assert(presentModes);
-    result = vkGetPhysicalDeviceSurfacePresentModesKHR(_gpus[0], _surface, &presentModeCount, presentModes);
+    result = vkGetPhysicalDeviceSurfacePresentModesKHR(_gpu, _surface, &presentModeCount, presentModes);
     assert(result == VK_SUCCESS);
 
     VkExtent2D swapChainExtent;
@@ -503,8 +515,8 @@ void vulkan::initSwapChain()
         color_image_view.flags = 0;
 
         swapchaingBuffer.image = swapchainImages[i];
-
-        vulkanHelper::setImageLayout(_commandBuffer, swapchaingBuffer.image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+        //Produces warnings and i dont know what it does so im commenting it
+        //vulkanHelper::setImageLayout(_commandBuffer, swapchaingBuffer.image, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
         color_image_view.image = swapchaingBuffer.image;
 
@@ -530,7 +542,7 @@ void vulkan::initDepthBuffer()
     const VkFormat depthFormat = VK_FORMAT_D16_UNORM;
 
     VkFormatProperties formatProperties;
-    vkGetPhysicalDeviceFormatProperties(_gpus[0], depthFormat, &formatProperties);
+    vkGetPhysicalDeviceFormatProperties(_gpu, depthFormat, &formatProperties);
 
     if (formatProperties.linearTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
     {
@@ -613,8 +625,9 @@ void vulkan::initDepthBuffer()
     res = vkBindImageMemory(_device, _depth.image, _depth.mem, 0);
     assert(res == VK_SUCCESS);
 
+    //Produces warnings and i dont know what it does so im commenting it
     /* Set the image layout to depth stencil optimal */
-    vulkanHelper::setImageLayout(_commandBuffer, _depth.image, viewCreateInfo.subresourceRange.aspectMask, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+    //vulkanHelper::setImageLayout(_commandBuffer, _depth.image, viewCreateInfo.subresourceRange.aspectMask, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
     /* Create image view */
     viewCreateInfo.image = _depth.image;
@@ -674,7 +687,7 @@ void vulkan::initUniformBuffer()
     _uniformData.bufferInfo.range = sizeof(_mvp);
 }
 
-void vulkan::initDescriptorAndPipelineLayouts()
+void vulkan::createDescriptorAndPipelineLayouts()
 {
     VkDescriptorSetLayoutBinding layout_bindings[2];
     layout_bindings[0].binding = 0;
@@ -703,8 +716,8 @@ void vulkan::initDescriptorAndPipelineLayouts()
 
     VkResult result;
 
-    _descriptorLayout = new VkDescriptorSetLayout[NUM_DESCRIPTOR_SETS];
-    result = vkCreateDescriptorSetLayout(_device, &descriptorLayout, NULL, _descriptorLayout);
+    _descriptorLayouts = new VkDescriptorSetLayout[NUM_DESCRIPTOR_SETS];
+    result = vkCreateDescriptorSetLayout(_device, &descriptorLayout, NULL, _descriptorLayouts);
     assert(result == VK_SUCCESS);
 
     /* Now use the descriptor layout to create a pipeline layout */
@@ -714,13 +727,13 @@ void vulkan::initDescriptorAndPipelineLayouts()
     pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
     pipelineLayoutCreateInfo.pPushConstantRanges = NULL;
     pipelineLayoutCreateInfo.setLayoutCount = NUM_DESCRIPTOR_SETS;
-    pipelineLayoutCreateInfo.pSetLayouts = _descriptorLayout;
+    pipelineLayoutCreateInfo.pSetLayouts = _descriptorLayouts;
 
     result = vkCreatePipelineLayout(_device, &pipelineLayoutCreateInfo, NULL, &_pipelineLayout);
     assert(result == VK_SUCCESS);
 }
 
-void vulkan::initRenderpass()
+void vulkan::createRenderpass()
 {
     /* Need attachments for render target and depth buffer */
     VkAttachmentDescription attachments[2];
@@ -841,7 +854,7 @@ void vulkan::initFramebuffers()
 
     _frameBuffers = new VkFramebuffer[_swapchainImageCount];
 
-    for (auto i = 0; i < _swapchainImageCount; i++) 
+    for (auto i = 0; i < _swapchainImageCount; i++)
     {
         attachments[0] = _swapchainBuffers[i].view;
         result = vkCreateFramebuffer(_device, &frameBufferCreateInfo, NULL, &_frameBuffers[i]);
@@ -883,8 +896,8 @@ void vulkan::initVertexBuffer()
 
     pass = vulkanHelper::memoryTypeFromProperties(
         *_memoryProperties,
-        memoryRequirements.memoryTypeBits, 
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+        memoryRequirements.memoryTypeBits,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         &memoryAllocateInfo.memoryTypeIndex);
 
     assert(pass);
@@ -919,7 +932,7 @@ void vulkan::initVertexBuffer()
     _vertexInputAttributesDescription[1].offset = 16;
 }
 
-void vulkan::initDescriptorPool()
+void vulkan::createDescriptorPool()
 {
     VkResult result;
     VkDescriptorPoolSize typeCount[2];
@@ -943,7 +956,7 @@ void vulkan::initDescriptorPool()
     assert(result == VK_SUCCESS);
 }
 
-void vulkan::initDescriptorSet()
+void vulkan::createDescriptorSet()
 {
     VkResult result;
 
@@ -952,10 +965,10 @@ void vulkan::initDescriptorSet()
     descriptorSetAllocateInfo[0].pNext = NULL;
     descriptorSetAllocateInfo[0].descriptorPool = _descriptorPool;
     descriptorSetAllocateInfo[0].descriptorSetCount = NUM_DESCRIPTOR_SETS;
-    descriptorSetAllocateInfo[0].pSetLayouts = _descriptorLayout;
+    descriptorSetAllocateInfo[0].pSetLayouts = _descriptorLayouts;
 
-    _descriptorSet = new VkDescriptorSet[NUM_DESCRIPTOR_SETS];
-    result = vkAllocateDescriptorSets(_device, descriptorSetAllocateInfo, _descriptorSet);
+    _descriptorSets = new VkDescriptorSet[NUM_DESCRIPTOR_SETS];
+    result = vkAllocateDescriptorSets(_device, descriptorSetAllocateInfo, _descriptorSets);
     assert(result == VK_SUCCESS);
 
     VkWriteDescriptorSet writes[2];
@@ -963,7 +976,7 @@ void vulkan::initDescriptorSet()
     writes[0] = {};
     writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     writes[0].pNext = NULL;
-    writes[0].dstSet = _descriptorSet[0];
+    writes[0].dstSet = _descriptorSets[0];
     writes[0].descriptorCount = 1;
     writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     writes[0].pBufferInfo = &_uniformData.bufferInfo;
@@ -985,7 +998,7 @@ void vulkan::initDescriptorSet()
     vkUpdateDescriptorSets(_device, 1, writes, 0, NULL); //use_texture ? 2 : 1
 }
 
-void vulkan::initPipelineCache()
+void vulkan::createPipelineCache()
 {
     VkResult result;
 
@@ -1000,7 +1013,7 @@ void vulkan::initPipelineCache()
     assert(result == VK_SUCCESS);
 }
 
-void vulkan::initPipeline()
+void vulkan::createPipeline()
 {
     VkResult result;
 
@@ -1012,14 +1025,14 @@ void vulkan::initPipeline()
     dynamicState.pDynamicStates = dynamicStateEnables;
     dynamicState.dynamicStateCount = 0;
 
-    VkPipelineVertexInputStateCreateInfo vi;
-    vi.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vi.pNext = NULL;
-    vi.flags = 0;
-    vi.vertexBindingDescriptionCount = 1;
-    vi.pVertexBindingDescriptions = &_vertexInputBindingDescription;
-    vi.vertexAttributeDescriptionCount = 2;
-    vi.pVertexAttributeDescriptions = _vertexInputAttributesDescription;
+    VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo;
+    vertexInputStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+    vertexInputStateCreateInfo.pNext = NULL;
+    vertexInputStateCreateInfo.flags = 0;
+    vertexInputStateCreateInfo.vertexBindingDescriptionCount = 1;
+    vertexInputStateCreateInfo.pVertexBindingDescriptions = &_vertexInputBindingDescription;
+    vertexInputStateCreateInfo.vertexAttributeDescriptionCount = 2;
+    vertexInputStateCreateInfo.pVertexAttributeDescriptions = _vertexInputAttributesDescription;
 
     VkPipelineInputAssemblyStateCreateInfo inputAssemblerCreateInfo;
     inputAssemblerCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -1116,7 +1129,7 @@ void vulkan::initPipeline()
     pipeline.basePipelineHandle = VK_NULL_HANDLE;
     pipeline.basePipelineIndex = 0;
     pipeline.flags = 0;
-    pipeline.pVertexInputState = &vi; //include_vi ? &vi : NULL;
+    pipeline.pVertexInputState = &vertexInputStateCreateInfo; //include_vi ? &vi : NULL;
     pipeline.pInputAssemblyState = &inputAssemblerCreateInfo;
     pipeline.pRasterizationState = &rasterizationStateCreateInfo;
     pipeline.pColorBlendState = &colorBlendStateCreateInfo;
@@ -1134,8 +1147,17 @@ void vulkan::initPipeline()
     assert(result == VK_SUCCESS);
 }
 
-void vulkan::draw()
+void vulkan::buildCommandBuffer()
 {
+    VkCommandBufferBeginInfo commandBufferBeginInfo = {};
+    commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    commandBufferBeginInfo.pNext = NULL;
+    commandBufferBeginInfo.flags = 0;
+    commandBufferBeginInfo.pInheritanceInfo = NULL;
+
+    auto result = vkBeginCommandBuffer(_commandBuffer, &commandBufferBeginInfo);
+    assert(result == VK_SUCCESS);
+
     VkClearValue clearValues[2];
     clearValues[0].color.float32[0] = 0.9f;
     clearValues[0].color.float32[1] = 0.9f;
@@ -1144,17 +1166,16 @@ void vulkan::draw()
     clearValues[1].depthStencil.depth = 1.0f;
     clearValues[1].depthStencil.stencil = 0;
 
-    VkSemaphore presentCompleteSemaphore;
     VkSemaphoreCreateInfo presentCompleteSemaphoreCreateInfo;
     presentCompleteSemaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
     presentCompleteSemaphoreCreateInfo.pNext = NULL;
     presentCompleteSemaphoreCreateInfo.flags = 0;
 
-    auto result = vkCreateSemaphore(_device, &presentCompleteSemaphoreCreateInfo, NULL, &presentCompleteSemaphore);
+    result = vkCreateSemaphore(_device, &presentCompleteSemaphoreCreateInfo, NULL, &_presentCompleteSemaphore);
     assert(result == VK_SUCCESS);
 
     // Get the index of the next available swapchain image:
-    result = vkAcquireNextImageKHR(_device, _swapchain, UINT64_MAX, presentCompleteSemaphore, NULL, &_currentBuffer);
+    result = vkAcquireNextImageKHR(_device, _swapchain, UINT64_MAX, _presentCompleteSemaphore, NULL, &_currentBuffer);
     assert(result == VK_SUCCESS);
 
     VkRenderPassBeginInfo rprenderPassBeginInfo;
@@ -1172,7 +1193,7 @@ void vulkan::draw()
     vkCmdBeginRenderPass(_commandBuffer, &rprenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     vkCmdBindPipeline(_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline);
-    vkCmdBindDescriptorSets(_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, NUM_DESCRIPTOR_SETS, _descriptorSet, 0, NULL);
+    vkCmdBindDescriptorSets(_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, NUM_DESCRIPTOR_SETS, _descriptorSets, 0, NULL);
 
     const VkDeviceSize offsets[1] = { 0 };
     vkCmdBindVertexBuffers(_commandBuffer, 0, 1, &_vertexBuffer.buf, offsets);
@@ -1202,29 +1223,30 @@ void vulkan::draw()
 
     result = vkEndCommandBuffer(_commandBuffer);
     assert(result == VK_SUCCESS);
+}
 
-    const VkCommandBuffer commandBuffers[] = { _commandBuffer };
+void vulkan::draw()
+{
     VkFenceCreateInfo fenceInfo;
-    VkFence drawFence;
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceInfo.pNext = NULL;
     fenceInfo.flags = 0;
-    vkCreateFence(_device, &fenceInfo, NULL, &drawFence);
+    vkCreateFence(_device, &fenceInfo, NULL, &_drawFence);
 
     VkPipelineStageFlags pipelineStageFlags = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
     VkSubmitInfo submitInfo[1] = {};
     submitInfo[0].pNext = NULL;
     submitInfo[0].sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo[0].waitSemaphoreCount = 1;
-    submitInfo[0].pWaitSemaphores = &presentCompleteSemaphore;
+    submitInfo[0].pWaitSemaphores = &_presentCompleteSemaphore;
     submitInfo[0].pWaitDstStageMask = &pipelineStageFlags;
     submitInfo[0].commandBufferCount = 1;
-    submitInfo[0].pCommandBuffers = commandBuffers;
+    submitInfo[0].pCommandBuffers = &_commandBuffer;
     submitInfo[0].signalSemaphoreCount = 0;
     submitInfo[0].pSignalSemaphores = NULL;
 
     /* Queue the command buffer for execution */
-    result = vkQueueSubmit(_queue, 1, submitInfo, drawFence);
+    auto result = vkQueueSubmit(_queue, 1, submitInfo, _drawFence);
     assert(result == VK_SUCCESS);
 
     /* Now present the image in the window */
@@ -1239,11 +1261,10 @@ void vulkan::draw()
     present.pResults = NULL;
 
     /* Make sure command buffer is finished before presenting */
-    do 
+    do
     {
-        result = vkWaitForFences(_device, 1, &drawFence, VK_TRUE, FENCE_NANOSECONDS_TIMEOUT);
-    }
-    while (result == VK_TIMEOUT);
+        result = vkWaitForFences(_device, 1, &_drawFence, VK_TRUE, FENCE_NANOSECONDS_TIMEOUT);
+    } while (result == VK_TIMEOUT);
 
     assert(result == VK_SUCCESS);
     result = vkQueuePresentKHR(_queue, &present);

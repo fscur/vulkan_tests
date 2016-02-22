@@ -57,12 +57,14 @@ private:
     VkInstance _vkInstance;
     std::vector<layerProperties> _instanceLayerProperties;
     VkSurfaceKHR _surface;
-    uint32_t _gpusCount; // needed?
-    uint32_t _queueCount; // needed?
-    VkPhysicalDevice* _gpus;
+    VkPhysicalDevice _gpu;
+
+    uint32_t _queueCount;
+
     VkQueueFamilyProperties* _queueProperties;
     VkPhysicalDeviceProperties* _deviceProperties;
     VkPhysicalDeviceMemoryProperties* _memoryProperties;
+
     uint32_t _graphicsQueueFamilyIndex;
     VkFormat _format;
     VkDevice _device;
@@ -76,7 +78,7 @@ private:
     depth _depth;
     uniformData _uniformData;
     VkPipelineLayout _pipelineLayout;
-    VkDescriptorSetLayout* _descriptorLayout;
+    VkDescriptorSetLayout* _descriptorLayouts;
     VkRenderPass _renderPass;
     VkPipelineShaderStageCreateInfo _shaderStages[2];
     VkFramebuffer* _frameBuffers;
@@ -84,11 +86,13 @@ private:
     VkVertexInputBindingDescription _vertexInputBindingDescription;
     VkVertexInputAttributeDescription _vertexInputAttributesDescription[2];
     VkDescriptorPool _descriptorPool;
-    VkDescriptorSet* _descriptorSet;
+    VkDescriptorSet* _descriptorSets;
     VkPipelineCache _pipelineCache;
     VkPipeline _pipeline;
     VkViewport _viewport;
     VkRect2D _scissor;
+    VkFence _drawFence;
+    VkSemaphore _presentCompleteSemaphore;
 
     PFN_vkCreateDebugReportCallbackEXT _createDebugReportCallback;
     PFN_vkDestroyDebugReportCallbackEXT _destroyDebugReportCallback;
@@ -104,27 +108,27 @@ private:
 private:
     void initGlobalLayerProperties();
     void initGlobalExtensionProperties(layerProperties &layerProps);
-    void initInstance();
+    void createInstance();
     void initEnumerateDevice();
     void initSwapchainExtension();
-    void initDevice();
+    void createDevice();
     void registerDebugCallback();
-    void initCommandPool();
-    void initCommandBuffer();
-    void executeBeginCommandBuffer();
-    void initDeviceQueue();
+    void createCommandPool();
+    void createCommandBuffer();
+    void createDeviceQueue();
     void initSwapChain();
     void initDepthBuffer();
     void initUniformBuffer();
-    void initDescriptorAndPipelineLayouts();
-    void initRenderpass();
+    void createDescriptorAndPipelineLayouts();
+    void createRenderpass();
     void initShaders();
     void initFramebuffers();
     void initVertexBuffer();
-    void initDescriptorPool();
-    void initDescriptorSet();
-    void initPipelineCache();
-    void initPipeline();
+    void createDescriptorPool();
+    void createDescriptorSet();
+    void createPipelineCache();
+    void createPipeline();
+    void buildCommandBuffer();
     void draw();
     void initViewport();
     void initScissor();

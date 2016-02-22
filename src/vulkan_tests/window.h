@@ -2,6 +2,7 @@
 
 #include <Windows.h>
 #include <string>
+#include <functional>
 
 class window
 {
@@ -11,8 +12,7 @@ private:
     LPCSTR _title;
     int _width;
     int _height;
-    
-
+    std::function<void(void)> _drawCallback = [] {};
 public:
     window(int width, int height, char* title);
     ~window();
@@ -26,5 +26,7 @@ public:
 
     inline void setWidth(int value) { _width = value; }
     inline void setHeight(int value) { _height = value; }
+
+    inline void setDrawCallback(std::function<void(void)> callback) { _drawCallback = callback; }
 };
 
