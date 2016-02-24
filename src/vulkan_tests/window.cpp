@@ -1,27 +1,65 @@
 ﻿#include "window.h"
 
+#include "mouseEventArgs.h"
+
 #include <iostream>
+
+enum eventType
+{
+    none,
+    onMouseMove,
+    OnMouseDown,
+    onMouseUp,
+};
+
+mouseEventArgs* _mouseEventArgs;
+eventType _eventType = eventType::none;
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    POINT mousePos;
+    auto mouseButton = mouseEventArgs::mouseButtons::none;
+
     switch (uMsg)
     {
     case WM_CLOSE:
         PostQuitMessage(0);
         break;
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        break;
     case WM_PAINT:
-        //run(); //input ??
-        return 0;
         break;
     case WM_KEYDOWN:
         break;
     case WM_KEYUP:
         break;
-    case WM_NCMOUSEMOVE:
+    case WM_RBUTTONDOWN:
+        mouseButton = mouseEventArgs::mouseButtons::right;
+        _eventType = eventType::OnMouseDown;
+        break;
+    case WM_LBUTTONDOWN:
+        mouseButton = mouseEventArgs::mouseButtons::left;
+        _eventType = eventType::OnMouseDown;
+        break;
+    case WM_RBUTTONUP:
+        mouseButton = mouseEventArgs::mouseButtons::right;
+        _eventType = eventType::onMouseUp;
+        break;
+    case WM_LBUTTONUP:
+        mouseButton = mouseEventArgs::mouseButtons::left;
+        _eventType = eventType::onMouseUp;
+        break;
+    case WM_MOUSEMOVE:
+        _eventType = eventType::onMouseMove;
         break;
     default:
         break;
     }
+
+    GetCursorPos(&mousePos);
+    ScreenToClient(hWnd, &mousePos);
+    _mouseEventArgs = new mouseEventArgs(mouseButton, glm::vec2(mousePos.x, mousePos.y));
 
     return DefWindowProc(hWnd, uMsg, wParam, lParam);
 }
@@ -30,7 +68,8 @@ window::window(int width, int height, char* title) :
     _instance(GetModuleHandle(NULL)),
     _title(title),
     _width(width),
-    _height(height)
+    _height(height),
+    _shouldExit(false)
 {
     WNDCLASSEX winClass;
     winClass.cbSize = sizeof(WNDCLASSEX);
@@ -52,7 +91,22 @@ window::window(int width, int height, char* title) :
         fflush(stdout);
         exit(1);
     }
+}
 
+window::~window()
+{
+    DestroyWindow(_handle);
+}
+
+void window::show()
+{
+    openWindow();
+    onLoaded();
+    loop();
+}
+
+void window::openWindow()
+{
     auto posX = 100;
     auto posY = 100;
     auto windowStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE | WS_SYSMENU;
@@ -86,29 +140,41 @@ window::window(int width, int height, char* title) :
     }
 }
 
-window::~window()
+void window::handleMessages()
 {
-    DestroyWindow(_handle);
+    MSG msg;
+    if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+    {
+        if (msg.message == WM_QUIT)
+        {
+            _shouldExit = true;
+        }
+        else
+        {
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+            dispatchInput();
+        }
+    }
 }
 
-void window::run()
+void window::dispatchInput()
 {
-    while (true)
-    {
-        _drawCallback();
+    if (_mouseEventArgs == nullptr)
+        return;
 
-        MSG msg;
-        if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-        {
-            if (msg.message == WM_QUIT)
-            {
-                break;
-            }
-            else
-            {
-                TranslateMessage(&msg);
-                DispatchMessage(&msg);
-            }
-        }
+    switch (_eventType)
+    {
+    case eventType::onMouseMove:
+        onMouseMove(_mouseEventArgs);
+        break;
+    case eventType::OnMouseDown:
+        onMouseDown(_mouseEventArgs);
+        break;
+    case eventType::onMouseUp:
+        onMouseUp(_mouseEventArgs);
+        break;
+    default:
+        break;
     }
 }

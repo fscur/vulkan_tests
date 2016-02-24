@@ -6,22 +6,22 @@
 
 typedef struct vertex
 {
-    vertex(glm::vec4 position, glm::vec4 color) : 
+    vertex(glm::vec3 position, glm::vec3 normal) : 
         position(position),
-        color(color)
+        normal(normal)
     {
     }
 
-    glm::vec4 position;
-    glm::vec4 color;
+    glm::vec3 position;
+    glm::vec3 normal;
 };
 
 class cube
 {
 public:
-    std::vector<glm::vec3> vertices;
+    std::vector<vertex> vertices;
 private:
-    cube(std::vector<glm::vec3> vertices) :
+    cube(std::vector<vertex> vertices) :
         vertices(vertices)
     {
     }
@@ -116,7 +116,14 @@ public:
         auto rtf = glm::vec3(0.5f, 0.5f, 0.5f);
         auto rtb = glm::vec3(0.5f, 0.5f, -0.5f);
 
-        auto vertices = std::vector<glm::vec3>();
+        auto rightNormal = glm::vec3(1.0f, 0.0f, 0.0f);
+        auto leftNormal = glm::vec3(-1.0f, 0.0f, 0.0f);
+        auto upNormal = glm::vec3(0.0f, 1.0f, 0.0f);
+        auto bottomNormal = glm::vec3(0.0f, -1.0f, 0.0f);
+        auto frontNormal = glm::vec3(0.0f, 0.0f, 1.0f);
+        auto backNormal = glm::vec3(0.0f, 0.0f, -1.0f);
+
+        auto vertices = std::vector<vertex>();
 
         ////             __________________________
         ////            /|ltb                  rtb/|
@@ -141,104 +148,53 @@ public:
         ////    |_________________________|/
 
         //front
-        vertices.push_back(lbf);
-        vertices.push_back(rbf);
-        vertices.push_back(ltf);
-        vertices.push_back(rbf);
-        vertices.push_back(rtf);
-        vertices.push_back(ltf);
+        vertices.push_back(vertex(lbf, frontNormal));
+        vertices.push_back(vertex(rbf, frontNormal));
+        vertices.push_back(vertex(ltf, frontNormal));
+        vertices.push_back(vertex(rbf, frontNormal));
+        vertices.push_back(vertex(rtf, frontNormal));
+        vertices.push_back(vertex(ltf, frontNormal));
 
         //right
-        vertices.push_back(rbf);
-        vertices.push_back(rbb);
-        vertices.push_back(rtb);
-        vertices.push_back(rtb);
-        vertices.push_back(rtf);
-        vertices.push_back(rbf);
+        vertices.push_back(vertex(rbf, rightNormal));
+        vertices.push_back(vertex(rbb, rightNormal));
+        vertices.push_back(vertex(rtb, rightNormal));
+        vertices.push_back(vertex(rtb, rightNormal));
+        vertices.push_back(vertex(rtf, rightNormal));
+        vertices.push_back(vertex(rbf, rightNormal));
 
         //left
-        vertices.push_back(lbf);
-        vertices.push_back(lbb);
-        vertices.push_back(ltb);
-        vertices.push_back(ltb);
-        vertices.push_back(ltf);
-        vertices.push_back(lbf);
+        vertices.push_back(vertex(lbf, leftNormal));
+        vertices.push_back(vertex(ltf, leftNormal));
+        vertices.push_back(vertex(ltb, leftNormal));
+        vertices.push_back(vertex(ltb, leftNormal));
+        vertices.push_back(vertex(lbb, leftNormal));
+        vertices.push_back(vertex(lbf, leftNormal));
 
         // back
-        vertices.push_back(ltb);
-        vertices.push_back(lbb);
-        vertices.push_back(rbb);
-        vertices.push_back(rbb);
-        vertices.push_back(rtb);
-        vertices.push_back(ltb);
+        vertices.push_back(vertex(ltb, backNormal));
+        vertices.push_back(vertex(rtb, backNormal));
+        vertices.push_back(vertex(rbb, backNormal));
+        vertices.push_back(vertex(rbb, backNormal));
+        vertices.push_back(vertex(lbb, backNormal));
+        vertices.push_back(vertex(ltb, backNormal));
 
-        //down
-        vertices.push_back(lbf);
-        vertices.push_back(rbf);
-        vertices.push_back(rbb);
-        vertices.push_back(rbb);
-        vertices.push_back(lbb);
-        vertices.push_back(lbf);
+        //bottom
+        vertices.push_back(vertex(lbf, bottomNormal));
+        vertices.push_back(vertex(lbb, bottomNormal));
+        vertices.push_back(vertex(rbb, bottomNormal));
+        vertices.push_back(vertex(rbb, bottomNormal));
+        vertices.push_back(vertex(rbf, bottomNormal));
+        vertices.push_back(vertex(lbf, bottomNormal));
 
         //up
-        vertices.push_back(ltb);
-        vertices.push_back(ltf);
-        vertices.push_back(rtf);
-        vertices.push_back(rtf);
-        vertices.push_back(rtb);
-        vertices.push_back(ltb);
+        vertices.push_back(vertex(ltb, upNormal));
+        vertices.push_back(vertex(ltf, upNormal));
+        vertices.push_back(vertex(rtf, upNormal));
+        vertices.push_back(vertex(rtf, upNormal));
+        vertices.push_back(vertex(rtb, upNormal));
+        vertices.push_back(vertex(ltb, upNormal));
 
         return new cube(vertices);
     }
-
-    static vertex* createVerticesAndColours()
-    {
-        vertex data[] =
-        {
-            vertex(glm::vec4(-1, -1, -1, 1), glm::vec4(1.f, 0.f, 0.f, 1)),
-            vertex(glm::vec4(1, -1, -1, 1), glm::vec4(1.f, 0.f, 0.f, 1)),
-            vertex(glm::vec4(-1, 1, -1, 1), glm::vec4(1.f, 0.f, 0.f, 1)),
-            vertex(glm::vec4(-1, 1, -1, 1), glm::vec4(1.f, 0.f, 0.f, 1)),
-            vertex(glm::vec4(1, -1, -1, 1), glm::vec4(1.f, 0.f, 0.f, 1)),
-            vertex(glm::vec4(1, 1, -1, 1), glm::vec4(1.f, 0.f, 0.f, 1)),
-
-            vertex(glm::vec4(-1, -1, 1, 1), glm::vec4(0.f, 1.f, 0.f, 1)),
-            vertex(glm::vec4(-1, 1, 1, 1), glm::vec4(0.f, 1.f, 0.f, 1)),
-            vertex(glm::vec4(1, -1, 1, 1), glm::vec4(0.f, 1.f, 0.f, 1)),
-            vertex(glm::vec4(1, -1, 1, 1), glm::vec4(0.f, 1.f, 0.f, 1)),
-            vertex(glm::vec4(-1, 1, 1, 1), glm::vec4(0.f, 1.f, 0.f, 1)),
-            vertex(glm::vec4(1, 1, 1, 1), glm::vec4(0.f, 1.f, 0.f, 1)),
-
-            vertex(glm::vec4(1, 1, 1, 1), glm::vec4(0.f, 0.f, 1.f, 1)),
-            vertex(glm::vec4(1, 1, -1, 1), glm::vec4(0.f, 0.f, 1.f, 1)),
-            vertex(glm::vec4(1, -1, 1, 1), glm::vec4(0.f, 0.f, 1.f, 1)),
-            vertex(glm::vec4(1, -1, 1, 1), glm::vec4(0.f, 0.f, 1.f, 1)),
-            vertex(glm::vec4(1, 1, -1, 1), glm::vec4(0.f, 0.f, 1.f, 1)),
-            vertex(glm::vec4(1, -1, -1, 1), glm::vec4(0.f, 0.f, 1.f, 1)),
-
-            vertex(glm::vec4(-1, 1, 1, 1), glm::vec4(1.f, 1.f, 0.f, 1)),
-            vertex(glm::vec4(-1, -1, 1, 1), glm::vec4(1.f, 1.f, 0.f, 1)),
-            vertex(glm::vec4(-1, 1, -1, 1), glm::vec4(1.f, 1.f, 0.f, 1)),
-            vertex(glm::vec4(-1, 1, -1, 1), glm::vec4(1.f, 1.f, 0.f, 1)),
-            vertex(glm::vec4(-1, -1, 1, 1), glm::vec4(1.f, 1.f, 0.f, 1)),
-            vertex(glm::vec4(-1, -1, -1, 1), glm::vec4(1.f, 1.f, 0.f, 1)),
-
-            vertex(glm::vec4(1, 1, 1, 1), glm::vec4(1.f, 0.f, 1.f, 1)),
-            vertex(glm::vec4(-1, 1, 1, 1), glm::vec4(1.f, 0.f, 1.f, 1)),
-            vertex(glm::vec4(1, 1, -1, 1), glm::vec4(1.f, 0.f, 1.f, 1)),
-            vertex(glm::vec4(1, 1, -1, 1), glm::vec4(1.f, 0.f, 1.f, 1)),
-            vertex(glm::vec4(-1, 1, 1, 1), glm::vec4(1.f, 0.f, 1.f, 1)),
-            vertex(glm::vec4(-1, 1, -1, 1), glm::vec4(1.f, 0.f, 1.f, 1)),
-
-            vertex(glm::vec4(1, -1, 1, 1), glm::vec4(0.f, 1.f, 1.f,1)),
-            vertex(glm::vec4(1, -1, -1, 1), glm::vec4(0.f, 1.f, 1.f,1)),
-            vertex(glm::vec4(-1, -1, 1, 1), glm::vec4(0.f, 1.f, 1.f,1)),
-            vertex(glm::vec4(-1, -1, 1, 1), glm::vec4(0.f, 1.f, 1.f,1)),
-            vertex(glm::vec4(1, -1, -1, 1), glm::vec4(0.f, 1.f, 1.f,1)),
-            vertex(glm::vec4(-1, -1, -1, 1), glm::vec4(0.f, 1.f, 1.f, 1)),
-        };
-
-        return data;
-    }
 };
-

@@ -162,13 +162,20 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="camera.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="mathUtils.cpp" />
+    <ClCompile Include="screen.cpp" />
     <ClCompile Include="vulkan.cpp" />
     <ClCompile Include="window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="camera.h" />
     <ClInclude Include="cube.h" />
     <ClInclude Include="glslCompiler.h" />
+    <ClInclude Include="mathUtils.h" />
+    <ClInclude Include="mouseEventArgs.h" />
+    <ClInclude Include="screen.h" />
     <ClInclude Include="shaderLoader.h" />
     <ClInclude Include="vertex.h" />
     <ClInclude Include="vulkan.h" />

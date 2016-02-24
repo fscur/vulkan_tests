@@ -8,6 +8,7 @@
 #include <vulkan\vulkan.h>
 
 #include <vector>
+#include <Windows.h>
 
 class vulkan
 {
@@ -36,26 +37,20 @@ class vulkan
         VkBuffer buf;
         VkDeviceMemory mem;
         VkDescriptorBufferInfo bufferInfo;
-    } uniformData;
-
-    typedef struct
-    {
-        VkBuffer buf;
-        VkDeviceMemory mem;
-        VkDescriptorBufferInfo bufferInfo;
-    } vertexBuffer;
-
+    } buffer;
 private:
     const int FENCE_NANOSECONDS_TIMEOUT = 100000000;
     const int NUM_DESCRIPTOR_SETS = 1;
 
-    window* _window;
+    HWND _windowHandle;
+    HINSTANCE _windowHInstance;
+    int _width;
+    int _height;
 
     std::string _vertexShader;
     std::string _fragmentShader;
 
     VkInstance _vkInstance;
-    std::vector<layerProperties> _instanceLayerProperties;
     VkSurfaceKHR _surface;
     VkPhysicalDevice _gpu;
 
@@ -76,35 +71,29 @@ private:
     uint32_t _currentBuffer;
     std::vector<swapchainBuffer> _swapchainBuffers;
     depth _depth;
-    uniformData _uniformData;
+    buffer _uniformData;
     VkPipelineLayout _pipelineLayout;
     VkDescriptorSetLayout* _descriptorLayouts;
     VkRenderPass _renderPass;
     VkPipelineShaderStageCreateInfo _shaderStages[2];
     VkFramebuffer* _frameBuffers;
-    vertexBuffer _vertexBuffer;
+    buffer _vertexBuffer;
     VkVertexInputBindingDescription _vertexInputBindingDescription;
     VkVertexInputAttributeDescription _vertexInputAttributesDescription[2];
     VkDescriptorPool _descriptorPool;
     VkDescriptorSet* _descriptorSets;
     VkPipelineCache _pipelineCache;
     VkPipeline _pipeline;
-    VkViewport _viewport;
-    VkRect2D _scissor;
     VkFence _drawFence;
     VkSemaphore _presentCompleteSemaphore;
 
     PFN_vkCreateDebugReportCallbackEXT _createDebugReportCallback;
     PFN_vkDestroyDebugReportCallbackEXT _destroyDebugReportCallback;
-    PFN_vkDebugReportMessageEXT _debugReportMessdage;
     VkDebugReportCallbackEXT _debugReportCallback;
 
     std::vector<char*> _enabledLayers;
 
-    glm::mat4 _projection;
-    glm::mat4 _view;
-    glm::mat4 _model;
-    glm::mat4 _mvp;
+    uint8_t* _uniformDataBuffer;
 private:
     void initGlobalLayerProperties();
     void initGlobalExtensionProperties(layerProperties &layerProps);
@@ -128,11 +117,13 @@ private:
     void createDescriptorSet();
     void createPipelineCache();
     void createPipeline();
-    void buildCommandBuffer();
-    void draw();
     void initViewport();
     void initScissor();
 public:
-    vulkan(window* window);
+    vulkan(HWND handle, HINSTANCE hInstance, int width, int height);
     ~vulkan();
+
+    void setFrameUniforms(glm::mat4 viewMatrix, glm::mat4 projectionMatrix);
+    void buildCommandBuffer();
+    void draw();
 };

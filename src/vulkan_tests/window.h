@@ -1,23 +1,35 @@
 #pragma once
 
+#include "mouseEventArgs.h"
+
 #include <Windows.h>
 #include <string>
 #include <functional>
 
 class window
 {
-private:
+protected:
     HWND _handle;
     HINSTANCE _instance;
     LPCSTR _title;
     int _width;
     int _height;
-    std::function<void(void)> _drawCallback = [] {};
+    bool _shouldExit;
+private:
+    void openWindow();
+    void dispatchInput();
+protected:
+    void handleMessages();
+    virtual void onLoaded() {};
+    virtual void loop() = 0;
+    virtual void onMouseMove(mouseEventArgs* eventArgs) {};
+    virtual void onMouseUp(mouseEventArgs* eventArgs) {};
+    virtual void onMouseDown(mouseEventArgs* eventArgs) {};
 public:
     window(int width, int height, char* title);
     ~window();
 
-    void run();
+    void show();
 
     inline HWND getHandle() const { return _handle; }
     inline HINSTANCE getInstance() const { return _instance; }
@@ -26,7 +38,5 @@ public:
 
     inline void setWidth(int value) { _width = value; }
     inline void setHeight(int value) { _height = value; }
-
-    inline void setDrawCallback(std::function<void(void)> callback) { _drawCallback = callback; }
 };
 

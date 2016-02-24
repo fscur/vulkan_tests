@@ -1,26 +1,21 @@
-#version 400
-#extension GL_ARB_separate_shader_objects : enable
-#extension GL_ARB_shading_language_420pack : enable
+#version 450
 
-layout (std140, binding = 0) uniform bufferVals 
+layout (std140, binding = 0) uniform frameUniforms 
 {
     mat4 mvp;
-} myBufferVals;
+} frameUniformsBuffer;
 
-layout (location = 0) in vec4 pos;
-layout (location = 1) in vec4 inColor;
-layout (location = 0) out vec4 outColor;
+layout (location = 0) in vec3 position;
+layout (location = 1) in vec3 normal;
 
-out gl_PerVertex 
-{
-    vec4 gl_Position;
-};
+layout (location = 0) out vec3 outNormal;
 
 void main() 
 {
-   outColor = inColor;
-   gl_Position = myBufferVals.mvp * pos;
-   // GL->VK conventions
+   outNormal = normal;
+   gl_Position = frameUniformsBuffer.mvp * vec4(position, 1.0f);
+
+    // GL->VK conventions
    gl_Position.y = -gl_Position.y;
    gl_Position.z = (gl_Position.z + gl_Position.w) / 2.0;
 }
