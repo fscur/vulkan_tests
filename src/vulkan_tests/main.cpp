@@ -1,8 +1,9 @@
 #include "screen.h"
-#include "vulkan.h"
 
 #include <iostream>
 #include <windows.h>
+
+#define GLM_DEPTH_ZERO_TO_ONE
 
 int main()
 {

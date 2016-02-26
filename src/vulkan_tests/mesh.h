@@ -1,32 +1,22 @@
 #pragma once
 
-#include <glm\glm.hpp>
+#include "vertex.h"
 
 #include <vector>
 
-typedef struct vertex
-{
-    vertex(glm::vec3 position, glm::vec3 normal) : 
-        position(position),
-        normal(normal)
-    {
-    }
-
-    glm::vec3 position;
-    glm::vec3 normal;
-};
-
-class cube
+class mesh
 {
 public:
     std::vector<vertex> vertices;
-private:
-    cube(std::vector<vertex> vertices) :
+public:
+    mesh(std::vector<vertex> vertices) :
         vertices(vertices)
     {
     }
-public:
-    static cube* create()
+
+    ~mesh() {};
+
+    static mesh* createCube()
     {
         //auto vertices = new float[24];
         //auto indices = new float[36];
@@ -195,6 +185,6 @@ public:
         vertices.push_back(vertex(rtb, upNormal));
         vertices.push_back(vertex(ltb, upNormal));
 
-        return new cube(vertices);
+        return new mesh(vertices);
     }
 };

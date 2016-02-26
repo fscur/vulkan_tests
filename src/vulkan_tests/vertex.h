@@ -2,12 +2,14 @@
 
 #include <glm\glm.hpp>
 
-struct vertex
+typedef struct vertex
 {
-    glm::vec3 position;
-
-    vertex(glm::vec3 position) :
-        position(position)
+    vertex(glm::vec3 position, glm::vec3 normal) : 
+        position(position),
+        normal(normal)
     {
-    };
+    }
+
+    glm::vec3 position;
+    glm::vec3 normal;
 };

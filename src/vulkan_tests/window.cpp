@@ -42,12 +42,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
         mouseButton = mouseEventArgs::mouseButtons::left;
         _eventType = eventType::OnMouseDown;
         break;
+    case WM_MBUTTONDOWN:
+        mouseButton = mouseEventArgs::mouseButtons::middle;
+        _eventType = eventType::OnMouseDown;
+        break;
     case WM_RBUTTONUP:
         mouseButton = mouseEventArgs::mouseButtons::right;
         _eventType = eventType::onMouseUp;
         break;
     case WM_LBUTTONUP:
         mouseButton = mouseEventArgs::mouseButtons::left;
+        _eventType = eventType::onMouseUp;
+        break;
+    case WM_MBUTTONUP:
+        mouseButton = mouseEventArgs::mouseButtons::middle;
         _eventType = eventType::onMouseUp;
         break;
     case WM_MOUSEMOVE:
@@ -173,6 +181,8 @@ void window::dispatchInput()
         break;
     case eventType::onMouseUp:
         onMouseUp(_mouseEventArgs);
+        break;
+    case eventType::none:
         break;
     default:
         break;

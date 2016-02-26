@@ -138,34 +138,39 @@ private:
         return resources;
     }
 public:
-    static void compile(const VkShaderStageFlagBits shaderType, const char *pshader, std::vector<unsigned int> &spirv)
+    static std::vector<unsigned int> compile(const VkShaderStageFlagBits shaderType, const std::string shader)
     {
         glslang::InitializeProcess();
 
         auto language = getLanguage(shaderType);
-        auto shader = new glslang::TShader(language);
-        shader->setStrings(&pshader, 1);
+        auto glslShader = new glslang::TShader(language);
+
+        auto shaderInCharPointer = shader.c_str();
+        glslShader->setStrings(&shaderInCharPointer, 1);
 
         // Enable SPIR-V and Vulkan rules when parsing GLSL
         auto messages = (EShMessages)(EShMsgSpvRules | EShMsgVulkanRules);
         auto resources = createResources();
-        if (!shader->parse(&resources, 100, false, messages))
+        if (!glslShader->parse(&resources, 100, false, messages))
         {
-            puts(shader->getInfoLog());
-            puts(shader->getInfoDebugLog());
+            puts(glslShader->getInfoLog());
+            puts(glslShader->getInfoDebugLog());
             assert(false);
         }
 
         auto program = glslang::TProgram();
-        program.addShader(shader);
+        program.addShader(glslShader);
         if (!program.link(messages))
         {
-            puts(shader->getInfoLog());
-            puts(shader->getInfoDebugLog());
+            puts(glslShader->getInfoLog());
+            puts(glslShader->getInfoDebugLog());
             assert(false);
         }
 
-        glslang::GlslangToSpv(*program.getIntermediate(language), spirv);
+        std::vector<unsigned int> spirvShader;
+        glslang::GlslangToSpv(*program.getIntermediate(language), spirvShader);
         glslang::FinalizeProcess();
+
+        return spirvShader;
     }
 };

@@ -166,20 +166,26 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="mathUtils.cpp" />
     <ClCompile Include="screen.cpp" />
-    <ClCompile Include="vulkan.cpp" />
+    <ClCompile Include="renderer.cpp" />
+    <ClCompile Include="vulkanDebugger.cpp" />
+    <ClCompile Include="vulkanDevice.cpp" />
+    <ClCompile Include="vulkanPipeline.cpp" />
     <ClCompile Include="window.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera.h" />
-    <ClInclude Include="cube.h" />
     <ClInclude Include="glslCompiler.h" />
     <ClInclude Include="mathUtils.h" />
+    <ClInclude Include="mesh.h" />
     <ClInclude Include="mouseEventArgs.h" />
     <ClInclude Include="screen.h" />
     <ClInclude Include="shaderLoader.h" />
     <ClInclude Include="vertex.h" />
-    <ClInclude Include="vulkan.h" />
+    <ClInclude Include="renderer.h" />
+    <ClInclude Include="vulkanDebugger.h" />
+    <ClInclude Include="vulkanDevice.h" />
     <ClInclude Include="vulkanHelper.h" />
+    <ClInclude Include="vulkanPipeline.h" />
     <ClInclude Include="window.h" />
   </ItemGroup>
   <ItemGroup>

@@ -1,5 +1,7 @@
 #include "screen.h"
 
+#include "mesh.h"
+
 #include <iostream>
 
 screen::screen(int width, int height, char* title) :
@@ -13,7 +15,7 @@ screen::screen(int width, int height, char* title) :
 void screen::onLoaded()
 {
     _camera = new camera(glm::vec3(0.0, 1.5f, 1.5f), glm::vec3(0.0f), _width, _height);
-    _vulkan = new vulkan(_handle, _instance, _width, _height);
+    _renderer = new renderer(_handle, _instance, _width, _height);
 }
 
 void screen::onMouseUp(mouseEventArgs* eventArgs)
@@ -32,6 +34,10 @@ void screen::onMouseDown(mouseEventArgs* eventArgs)
         break;
     case mouseEventArgs::mouseButtons::right:
         _rotating = true;
+        break;
+    case mouseEventArgs::mouseButtons::middle:
+        _renderer->addObject(mesh::createCube());
+        std::cout << "object added" << std::endl;
         break;
     default:
         break;
@@ -59,7 +65,7 @@ void screen::onMouseMove(mouseEventArgs* eventArgs)
 
 void screen::loop()
 {
-    while (!_shouldExit)
+    while (!true | !false & !_shouldExit)
     {
         handleMessages();
         update();
@@ -70,12 +76,11 @@ void screen::loop()
 void screen::update()
 {
     //_camera->orbit(glm::vec3(), _camera->up, 0.001);
-
-    _vulkan->setFrameUniforms(_camera->getViewMatrix(), _camera->getProjectionMatrix());
+    _renderer->setFrameUniforms(_camera->getViewMatrix(), _camera->getProjectionMatrix());
 }
 
 void screen::render()
 {
-    _vulkan->buildCommandBuffer();
-    _vulkan->draw();
+    _renderer->buildCommandBuffer();
+    _renderer->render();
 }

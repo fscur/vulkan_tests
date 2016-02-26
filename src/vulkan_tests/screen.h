@@ -1,7 +1,7 @@
 #pragma once
 
 #include "window.h"
-#include "vulkan.h"
+#include "renderer.h"
 #include "camera.h"
 #include "mouseEventArgs.h"
 
@@ -9,7 +9,7 @@ class screen : public window
 {
 private:
     camera* _camera;
-    vulkan* _vulkan;
+    renderer* _renderer;
     glm::vec2 _lastMousePosition;
     bool _rotating;
     bool _panning;
