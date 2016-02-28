@@ -167,6 +167,7 @@
     <ClCompile Include="mathUtils.cpp" />
     <ClCompile Include="screen.cpp" />
     <ClCompile Include="renderer.cpp" />
+    <ClCompile Include="vulkanBuffer.cpp" />
     <ClCompile Include="vulkanDebugger.cpp" />
     <ClCompile Include="vulkanDevice.cpp" />
     <ClCompile Include="vulkanPipeline.cpp" />
@@ -182,6 +183,7 @@
     <ClInclude Include="shaderLoader.h" />
     <ClInclude Include="vertex.h" />
     <ClInclude Include="renderer.h" />
+    <ClInclude Include="vulkanBuffer.h" />
     <ClInclude Include="vulkanDebugger.h" />
     <ClInclude Include="vulkanDevice.h" />
     <ClInclude Include="vulkanHelper.h" />

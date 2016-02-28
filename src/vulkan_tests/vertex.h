@@ -2,14 +2,16 @@
 
 #include <glm\glm.hpp>
 
-typedef struct vertex
+struct vertex
 {
-    vertex(glm::vec3 position, glm::vec3 normal) : 
+    vertex(glm::vec3 position, glm::vec2 texCoord, glm::vec3 normal) : 
         position(position),
+        texCoord(texCoord),
         normal(normal)
     {
     }
 
     glm::vec3 position;
+    glm::vec2 texCoord;
     glm::vec3 normal;
 };

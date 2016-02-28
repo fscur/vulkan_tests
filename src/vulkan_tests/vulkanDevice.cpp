@@ -21,6 +21,9 @@ vulkanDevice::vulkanDevice(VkInstance vkInstance, HWND windowHandle, HINSTANCE w
 
 vulkanDevice::~vulkanDevice()
 {
+    vkFreeCommandBuffers(vkDevice, commandPool, 1, &commandBuffer);
+    vkDestroyCommandPool(vkDevice, commandPool, NULL);
+    vkDestroyDevice(vkDevice, NULL);
 }
 
 void vulkanDevice::initializePhysicalDevice()

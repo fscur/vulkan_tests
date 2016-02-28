@@ -37,33 +37,14 @@ renderer::~renderer()
 {
     vkDestroySemaphore(_device->vkDevice, _presentCompleteSemaphore, NULL);
     vkDestroyFence(_device->vkDevice, _drawFence, NULL);
-    vkDestroyPipeline(_device->vkDevice, _pipeline->vkPipeline, NULL);
-    vkDestroyPipelineCache(_device->vkDevice, _pipeline->pipelineCache, NULL);
-    vkDestroyDescriptorPool(_device->vkDevice, _pipeline->descriptorPool, NULL);
 
-    vkDestroyBuffer(_device->vkDevice, _pipeline->vertexBuffer.buf, NULL);
-    vkFreeMemory(_device->vkDevice, _pipeline->vertexBuffer.mem, NULL);
+    _pipeline->~vulkanPipeline();
 
     for (uint32_t i = 0; i < _swapchainImageCount; i++)
     {
         vkDestroyFramebuffer(_device->vkDevice, _frameBuffers[i], NULL);
     }
     free(_frameBuffers);
-
-    vkDestroyShaderModule(_device->vkDevice, _pipeline->shaderStages[0].module, NULL);
-    vkDestroyShaderModule(_device->vkDevice, _pipeline->shaderStages[1].module, NULL);
-
-    vkDestroyRenderPass(_device->vkDevice, _pipeline->renderPass, NULL);
-
-    for (int i = 0; i < _pipeline->NUM_DESCRIPTOR_SETS; i++)
-    {
-        vkDestroyDescriptorSetLayout(_device->vkDevice, _pipeline->descriptorLayouts[i], NULL);
-    }
-
-    vkDestroyPipelineLayout(_device->vkDevice, _pipeline->pipelineLayout, NULL);
-
-    vkDestroyBuffer(_device->vkDevice, _pipeline->uniformData.buf, NULL);
-    vkFreeMemory(_device->vkDevice, _pipeline->uniformData.mem, NULL);
 
     vkDestroyImageView(_device->vkDevice, _depth.view, NULL);
     vkDestroyImage(_device->vkDevice, _depth.image, NULL);
@@ -75,9 +56,9 @@ renderer::~renderer()
     }
     vkDestroySwapchainKHR(_device->vkDevice, _swapchain, NULL);
 
-    vkFreeCommandBuffers(_device->vkDevice, _device->commandPool, 1, &_device->commandBuffer);
-    vkDestroyCommandPool(_device->vkDevice, _device->commandPool, NULL);
-    vkDestroyDevice(_device->vkDevice, NULL);
+    
+    _device->~vulkanDevice();
+
     vulkanDebugger::releaseDebugger(_vkInstance);
     vkDestroyInstance(_vkInstance, NULL);
 
@@ -86,6 +67,9 @@ renderer::~renderer()
         delete mesh;
     }
 }
+
+
+
 
 void renderer::createInstance()
 {
@@ -407,7 +391,6 @@ void renderer::buildCommandBuffer()
     result = vkCreateSemaphore(_device->vkDevice, &presentCompleteSemaphoreCreateInfo, NULL, &_presentCompleteSemaphore);
     assert(result == VK_SUCCESS);
 
-    // Get the index of the next available swapchain image:
     result = vkAcquireNextImageKHR(_device->vkDevice, _swapchain, UINT64_MAX, _presentCompleteSemaphore, NULL, &_currentBuffer);
     assert(result == VK_SUCCESS);
 
@@ -441,21 +424,15 @@ void renderer::buildCommandBuffer()
     scissor.offset.y = 0;
     vkCmdSetScissor(_device->commandBuffer, 0, 1, &scissor);
 
-    vkCmdBindDescriptorSets(
-        _device->commandBuffer,
-        VK_PIPELINE_BIND_POINT_GRAPHICS,
-        _pipeline->pipelineLayout,
-        0,
-        _pipeline->NUM_DESCRIPTOR_SETS,
-        _pipeline->descriptorSets,
-        0, nullptr);
+    _pipeline->bindTo(_device->commandBuffer);
 
-    vkCmdBindPipeline(_device->commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline->vkPipeline);
+    auto indicesCount = 0;
+    for (auto& mesh : _renderList)
+    {
+        indicesCount += mesh->indices.size();
+    }
 
-    const VkDeviceSize offsets[1] = { 0 };
-    vkCmdBindVertexBuffers(_device->commandBuffer, 0, 1, &_pipeline->vertexBuffer.buf, offsets);
-
-    vkCmdDraw(_device->commandBuffer, 36, 1, 0, 0);
+    vkCmdDrawIndexed(_device->commandBuffer, indicesCount + 36, 1, 0, 0, 1);
 
     vkCmdEndRenderPass(_device->commandBuffer);
 

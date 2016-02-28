@@ -1,6 +1,7 @@
 #pragma once
 
 #include "vulkanDevice.h"
+#include "vulkanBuffer.h"
 #include "mesh.h"
 
 #include <vulkan\vulkan.h>
@@ -10,26 +11,16 @@
 
 class vulkanPipeline
 {
-    typedef struct
-    {
-        VkBuffer buf;
-        VkDeviceMemory mem;
-        VkDescriptorBufferInfo bufferInfo;
-    } buffer;
-
 private:
-    void* _uniformDataBuffer;
-
     vulkanDevice* _device;
 public:
-    const int NUM_DESCRIPTOR_SETS = 1;
-
+    std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
     std::vector<VkVertexInputBindingDescription> vertexInputBindingDescription;
     std::vector<VkVertexInputAttributeDescription> vertexInputAttributesDescription;
 
     VkDescriptorPool descriptorPool;
-    VkDescriptorSet* descriptorSets;
-    VkDescriptorSetLayout* descriptorLayouts;
+    VkDescriptorSet descriptorSet;
+    VkDescriptorSetLayout descriptorSetLayout;
 
     VkPipelineShaderStageCreateInfo shaderStages[2];
     VkRenderPass renderPass;
@@ -38,23 +29,26 @@ public:
     VkPipelineCache pipelineCache;
     VkPipeline vkPipeline;
 
-    buffer uniformData;
-    buffer vertexBuffer;
+    vulkanBuffer* frameUniformsUbo;
+    vulkanBuffer* verticesBuffer;
+    vulkanBuffer* indicesBuffer;
 private:
     void createUniformBuffer();
     void createRenderpass();
     void createShaders(std::string vertexShader, std::string fragmentShader);
 
     void createVertexBuffer();
-    void createDescriptorAndPipelineLayouts();
+    void createPipelineLayouts();
     void createDescriptorPool();
-    void createDescriptorSet();
+    void createDescriptorSets();
     void createPipelineCache();
     void createPipeline();
+    void updateDescriptorSets();
 public:
     vulkanPipeline(vulkanDevice* vulkanDevice);
     ~vulkanPipeline();
 
+    void bindTo(VkCommandBuffer & commandBuffer);
     void updateFrameUniformsBuffer(glm::mat4 mvp);
     void updateVertexBuffer(std::vector<mesh*>& renderList);
 };
