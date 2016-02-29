@@ -3,6 +3,7 @@
 #include "window.h"
 #include "vulkanDevice.h"
 #include "vulkanPipeline.h"
+#include "vulkanDebugger.h"
 #include "mesh.h"
 
 #include <glm\glm.hpp>
@@ -38,6 +39,7 @@ private:
 
     std::vector<char*> _enabledLayers;
     std::vector<char*> _enabledExtensions;
+    vulkanDebugger* _debugger;
     VkInstance _vkInstance;
     vulkanDevice* _device;
     vulkanPipeline* _pipeline;

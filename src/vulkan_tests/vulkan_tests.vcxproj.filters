@@ -48,6 +48,12 @@
     <ClCompile Include="vulkanBuffer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="vkInitializers.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="vkTools.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="window.h">
@@ -95,6 +101,12 @@
     <ClInclude Include="vulkanBuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="vkInitializers.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="vkTools.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\resources\shaders\basic.frag">
@@ -103,5 +115,6 @@
     <None Include="..\..\resources\shaders\basic.vert">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="packages.config" />
   </ItemGroup>
 </Project>

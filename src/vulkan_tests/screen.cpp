@@ -12,10 +12,18 @@ screen::screen(int width, int height, char* title) :
 {
 }
 
+screen::~screen() 
+{
+    delete _camera;
+    delete _renderer;
+    window::~window();
+}
+
 void screen::onLoaded()
 {
     _camera = new camera(glm::vec3(0.0, 1.5f, 1.5f), glm::vec3(0.0f), _width, _height);
     _renderer = new renderer(_handle, _instance, _width, _height);
+    _renderer->addObject(mesh::createCube());
 }
 
 void screen::onMouseUp(mouseEventArgs* eventArgs)
@@ -75,7 +83,7 @@ void screen::loop()
 
 void screen::update()
 {
-    //_camera->orbit(glm::vec3(), _camera->up, 0.001);
+    _camera->orbit(glm::vec3(), _camera->up, 0.001f);
     _renderer->setFrameUniforms(_camera->getViewMatrix(), _camera->getProjectionMatrix());
 }
 

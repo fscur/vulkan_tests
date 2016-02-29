@@ -129,7 +129,7 @@ void vulkanDevice::initializeDevice()
     deviceInfo.pNext = NULL;
     deviceInfo.queueCreateInfoCount = 1;
     deviceInfo.pQueueCreateInfos = &queueInfo;
-    deviceInfo.enabledLayerCount = _enabledLayers.size();
+    deviceInfo.enabledLayerCount = (uint32_t)_enabledLayers.size();
     deviceInfo.ppEnabledLayerNames = _enabledLayers.data();
     deviceInfo.enabledExtensionCount = 1;
     deviceInfo.ppEnabledExtensionNames = new char*[1]{ VK_KHR_SWAPCHAIN_EXTENSION_NAME };

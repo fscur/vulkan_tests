@@ -7,6 +7,6 @@
 
 int main()
 {
-    auto window = new screen(600, 600, "vulkan rocks!!");
-    window->show();
+    auto window = screen(600, 600, "vulkan rocks!!");
+    window.show();
 }

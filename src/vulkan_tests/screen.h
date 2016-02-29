@@ -15,7 +15,7 @@ private:
     bool _panning;
 public:
     screen(int width, int height, char* title);
-    ~screen() { window::~window(); };
+    ~screen();
 
     void onLoaded() override;
     void onMouseUp(mouseEventArgs* eventArgs) override;

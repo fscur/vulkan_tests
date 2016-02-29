@@ -5,13 +5,14 @@
 class vulkanDebugger
 {
 private:
-    static PFN_vkCreateDebugReportCallbackEXT _createDebugReportCallback;
-    static PFN_vkDestroyDebugReportCallbackEXT _destroyDebugReportCallback;
-    static VkDebugReportCallbackEXT _debugReportCallback;
+    PFN_vkCreateDebugReportCallbackEXT _createDebugReportCallback;
+    PFN_vkDestroyDebugReportCallbackEXT _destroyDebugReportCallback;
+    VkDebugReportCallbackEXT _debugReportCallback;
+
+    const VkInstance& _vkInstance;
 public:
-    vulkanDebugger() {};
-    ~vulkanDebugger() {};
-    static void setupDebugger(const VkInstance& instance);
-    static void releaseDebugger(const VkInstance& instance);
+    vulkanDebugger(const VkInstance& instance);
+    ~vulkanDebugger();
+    void setup();
 };
 

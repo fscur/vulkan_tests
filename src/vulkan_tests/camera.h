@@ -26,7 +26,7 @@ public:
     void zoom(float amount);
     void pan(glm::vec3 axis, float amount);
 
-    inline glm::mat4 getProjectionMatrix() const { return glm::perspective<float>(glm::half_pi<float>(), _width / _height, 0.1f, 100.0f); }
+    inline glm::mat4 getProjectionMatrix() const { return glm::perspective<float>(glm::half_pi<float>(), (float)(_width / _height), 0.1f, 100.0f); }
     inline glm::mat4 getViewMatrix() const { return glm::lookAt<float>(position, target, up); }
 };
 

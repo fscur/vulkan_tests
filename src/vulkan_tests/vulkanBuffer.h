@@ -15,18 +15,17 @@ public:
     VkDeviceSize offset;
     VkDeviceSize range;
 
-    uint32_t dataSize;
     void* data;
+    size_t dataSize;
 private:
     void create();
     void allocate();
     void fill();
     void bindMemory();
 public:
-    vulkanBuffer(vulkanDevice* device, uint32_t dataSize, void* data, VkBufferUsageFlags usageFlags);
+    vulkanBuffer(vulkanDevice* device, void* data, size_t dataSize, VkBufferUsageFlags usageFlags);
     ~vulkanBuffer();
     void release();
-    void update(uint32_t dataSize, void* data);
+    void update(void* data, size_t dataSize);
     VkDescriptorBufferInfo getBufferInfo();
-    
 };

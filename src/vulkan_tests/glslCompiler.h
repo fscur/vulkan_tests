@@ -138,6 +138,31 @@ private:
         return resources;
     }
 public:
+    static VkPipelineShaderStageCreateInfo buildShaderModuleFromGLSL(vulkanDevice* device, const VkShaderStageFlagBits shaderType, const std::string shader)
+    {
+        VkPipelineShaderStageCreateInfo shaderStageInfo = {};
+        shaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        shaderStageInfo.pNext = NULL;
+        shaderStageInfo.pSpecializationInfo = NULL;
+        shaderStageInfo.flags = 0;
+        shaderStageInfo.stage = shaderType;
+        shaderStageInfo.pName = "main";
+
+        auto spirvShader = glslCompiler::compile(shaderType, shader);
+
+        VkShaderModuleCreateInfo shaderModule = {};
+        shaderModule.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        shaderModule.pNext = NULL;
+        shaderModule.flags = 0;
+        shaderModule.codeSize = spirvShader.size() * sizeof(spirvShader[0]);
+        shaderModule.pCode = spirvShader.data();
+
+        auto result = vkCreateShaderModule(device->vkDevice, &shaderModule, NULL, &shaderStageInfo.module);
+        assert(!result);
+
+        return shaderStageInfo;
+    }
+
     static std::vector<unsigned int> compile(const VkShaderStageFlagBits shaderType, const std::string shader)
     {
         glslang::InitializeProcess();

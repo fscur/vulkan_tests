@@ -2,11 +2,11 @@
 
 #include "vulkanHelper.h"
 
-vulkanBuffer::vulkanBuffer(vulkanDevice* device, uint32_t dataSize, void* data, VkBufferUsageFlags usageFlags) :
+vulkanBuffer::vulkanBuffer(vulkanDevice* device, void* data, size_t dataSize, VkBufferUsageFlags usageFlags) :
     _device(device),
-    dataSize(dataSize),
+    _usageFlags(usageFlags),
     data(data),
-    _usageFlags(usageFlags)
+    dataSize(dataSize)
 {
     create();
     allocate();
@@ -16,8 +16,8 @@ vulkanBuffer::vulkanBuffer(vulkanDevice* device, uint32_t dataSize, void* data, 
 
 vulkanBuffer::~vulkanBuffer()
 {
+    //delete(data); //TODO:fix vulkanBuffer delete
     release();
-    delete data;
 }
 
 void vulkanBuffer::release()
@@ -73,7 +73,9 @@ void vulkanBuffer::fill()
     auto result = vkMapMemory(_device->vkDevice, memory, 0, range, 0, (void **)&dataPtr);
     assert(!result);
 
-    memcpy(dataPtr, data, dataSize);
+    if(data != nullptr)
+        memcpy(dataPtr, data, dataSize);
+
     vkUnmapMemory(_device->vkDevice, memory);
 }
 
@@ -83,7 +85,7 @@ void vulkanBuffer::bindMemory()
     assert(!result);
 }
 
-void vulkanBuffer::update(uint32_t dataSize, void* data)
+void vulkanBuffer::update(void* data, size_t dataSize)
 {
     auto oldDataSize = this->dataSize;
 

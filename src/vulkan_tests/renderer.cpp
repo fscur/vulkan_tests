@@ -21,10 +21,11 @@ renderer::renderer(HWND handle, HINSTANCE hInstance, int width, int height) :
 
     _enabledExtensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
     _enabledExtensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
-    _enabledExtensions.push_back("VK_EXT_debug_report");
+    _enabledExtensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
 
     createInstance();
-    vulkanDebugger::setupDebugger(_vkInstance);
+
+    _debugger = new vulkanDebugger(_vkInstance);
     _device = new vulkanDevice(_vkInstance, handle, hInstance, _enabledLayers, _enabledExtensions);
     _pipeline = new vulkanPipeline(_device);
 
@@ -35,10 +36,9 @@ renderer::renderer(HWND handle, HINSTANCE hInstance, int width, int height) :
 
 renderer::~renderer()
 {
-    vkDestroySemaphore(_device->vkDevice, _presentCompleteSemaphore, NULL);
     vkDestroyFence(_device->vkDevice, _drawFence, NULL);
 
-    _pipeline->~vulkanPipeline();
+    delete _pipeline;
 
     for (uint32_t i = 0; i < _swapchainImageCount; i++)
     {
@@ -56,10 +56,9 @@ renderer::~renderer()
     }
     vkDestroySwapchainKHR(_device->vkDevice, _swapchain, NULL);
 
-    
-    _device->~vulkanDevice();
+    delete _debugger;
+    delete _device;
 
-    vulkanDebugger::releaseDebugger(_vkInstance);
     vkDestroyInstance(_vkInstance, NULL);
 
     for (auto mesh : _renderList)
@@ -87,16 +86,16 @@ void renderer::createInstance()
     instanceInfo.pNext = NULL;
     instanceInfo.flags = 0;
     instanceInfo.pApplicationInfo = &appInfo;
-
-    instanceInfo.enabledLayerCount = _enabledLayers.size();
+    instanceInfo.enabledLayerCount = (uint32_t)_enabledLayers.size();
     instanceInfo.ppEnabledLayerNames = _enabledLayers.data();
-
-    instanceInfo.enabledExtensionCount = _enabledExtensions.size();
+    instanceInfo.enabledExtensionCount = (uint32_t)_enabledExtensions.size();
     instanceInfo.ppEnabledExtensionNames = _enabledExtensions.data();
 
     VkResult result = vkCreateInstance(&instanceInfo, NULL, &_vkInstance);
     assert(result == VK_SUCCESS);
 }
+
+
 
 void renderer::initSwapChain()
 {
@@ -347,7 +346,7 @@ void renderer::initFramebuffers()
 
     _frameBuffers = new VkFramebuffer[_swapchainImageCount];
 
-    for (auto i = 0; i < _swapchainImageCount; i++)
+    for (uint32_t i = 0; i < _swapchainImageCount; i++)
     {
         imageAttachments[0] = _swapchainBuffers[i].view;
         result = vkCreateFramebuffer(_device->vkDevice, &frameBufferCreateInfo, NULL, &_frameBuffers[i]);
@@ -394,19 +393,19 @@ void renderer::buildCommandBuffer()
     result = vkAcquireNextImageKHR(_device->vkDevice, _swapchain, UINT64_MAX, _presentCompleteSemaphore, NULL, &_currentBuffer);
     assert(result == VK_SUCCESS);
 
-    VkRenderPassBeginInfo rprenderPassBeginInfo;
-    rprenderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    rprenderPassBeginInfo.pNext = NULL;
-    rprenderPassBeginInfo.renderPass = _pipeline->renderPass;
-    rprenderPassBeginInfo.framebuffer = _frameBuffers[_currentBuffer];
-    rprenderPassBeginInfo.renderArea.offset.x = 0;
-    rprenderPassBeginInfo.renderArea.offset.y = 0;
-    rprenderPassBeginInfo.renderArea.extent.width = _width;
-    rprenderPassBeginInfo.renderArea.extent.height = _height;
-    rprenderPassBeginInfo.clearValueCount = 2;
-    rprenderPassBeginInfo.pClearValues = clearValues;
+    VkRenderPassBeginInfo renderPassBeginInfo;
+    renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassBeginInfo.pNext = NULL;
+    renderPassBeginInfo.renderPass = _pipeline->renderPass;
+    renderPassBeginInfo.framebuffer = _frameBuffers[_currentBuffer];
+    renderPassBeginInfo.renderArea.offset.x = 0;
+    renderPassBeginInfo.renderArea.offset.y = 0;
+    renderPassBeginInfo.renderArea.extent.width = _width;
+    renderPassBeginInfo.renderArea.extent.height = _height;
+    renderPassBeginInfo.clearValueCount = 2;
+    renderPassBeginInfo.pClearValues = clearValues;
 
-    vkCmdBeginRenderPass(_device->commandBuffer, &rprenderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(_device->commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     VkViewport viewport = {};
     viewport.height = (float)_width;
@@ -429,14 +428,14 @@ void renderer::buildCommandBuffer()
     auto indicesCount = 0;
     for (auto& mesh : _renderList)
     {
-        indicesCount += mesh->indices.size();
+        indicesCount += (uint32_t)mesh->indices.size();
     }
 
-    vkCmdDrawIndexed(_device->commandBuffer, indicesCount + 36, 1, 0, 0, 1);
+    vkCmdDrawIndexed(_device->commandBuffer, indicesCount, 1, 0, 0, 1);
 
     vkCmdEndRenderPass(_device->commandBuffer);
 
-    VkImageMemoryBarrier* prePresentBarrier = new VkImageMemoryBarrier();
+    auto prePresentBarrier = new VkImageMemoryBarrier();
     prePresentBarrier->sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     prePresentBarrier->pNext = NULL;
     prePresentBarrier->srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
@@ -467,18 +466,6 @@ void renderer::buildCommandBuffer()
 
 void renderer::render()
 {
-    //VkSemaphoreCreateInfo presentCompleteSemaphoreCreateInfo;
-    //presentCompleteSemaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-    //presentCompleteSemaphoreCreateInfo.pNext = NULL;
-    //presentCompleteSemaphoreCreateInfo.flags = 0;
-
-    //auto result = vkCreateSemaphore(_device->vkDevice, &presentCompleteSemaphoreCreateInfo, NULL, &_presentCompleteSemaphore);
-    //assert(result == VK_SUCCESS);
-
-    //// Get the index of the next available swapchain image:
-    //result = vkAcquireNextImageKHR(_device->vkDevice, _swapchain, UINT64_MAX, _presentCompleteSemaphore, NULL, &_currentBuffer);
-    //assert(result == VK_SUCCESS);
-
     VkFenceCreateInfo fenceInfo;
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceInfo.pNext = NULL;
@@ -518,51 +505,20 @@ void renderer::render()
     assert(result == VK_SUCCESS);
 
     vkDestroySemaphore(_device->vkDevice, _presentCompleteSemaphore, nullptr);
-
-    VkImageMemoryBarrier postPresentBarrier = {};
-    postPresentBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    postPresentBarrier.pNext = NULL;
-    postPresentBarrier.srcAccessMask = 0;
-    postPresentBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    postPresentBarrier.oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    postPresentBarrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    postPresentBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    postPresentBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    postPresentBarrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-    postPresentBarrier.image = _swapchainBuffers[_currentBuffer].image;
-
-    VkCommandBufferBeginInfo cmdBufInfo = {};
-    cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-    result= vkBeginCommandBuffer(_device->postPresentCommandBuffer, &cmdBufInfo);
-    assert(!result);
-
-    vkCmdPipelineBarrier(
-        _device->postPresentCommandBuffer,
-        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-        0,
-        0, nullptr,
-        0, nullptr,
-        1, &postPresentBarrier);
-
-    result = vkEndCommandBuffer(_device->postPresentCommandBuffer);
-    assert(!result);
-
-    submitInfo = {};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &_device->postPresentCommandBuffer;
-
-    result = vkQueueSubmit(_device->queue, 1, &submitInfo, VK_NULL_HANDLE);
-    assert(!result);
-
-    result = vkQueueWaitIdle(_device->queue);
-    assert(!result);
 }
 
 void renderer::addObject(mesh* mesh)
 {
     _renderList.push_back(mesh);
-    _pipeline->updateVertexBuffer(_renderList);
+
+    auto indices = std::vector<uint32_t>();
+    auto vertices = std::vector<vertex>();
+    for each (auto mesh in _renderList)
+    {
+        indices.insert(indices.end(), mesh->indices.begin(), mesh->indices.end());
+        vertices.insert(vertices.end(), mesh->vertices.begin(), mesh->vertices.end());
+    }
+
+    _pipeline->updateIndicesBuffer(indices.data(), indices.size() * sizeof(indices[0]));
+    _pipeline->updateVerticesBuffer(vertices.data(), vertices.size() * sizeof(vertices[0]));
 }

@@ -13,42 +13,44 @@ class vulkanPipeline
 {
 private:
     vulkanDevice* _device;
+
+    std::vector<VkDescriptorSetLayoutBinding> _layoutBindings;
+    std::vector<VkVertexInputBindingDescription> _vertexInputBindingDescription;
+    std::vector<VkVertexInputAttributeDescription> _vertexInputAttributesDescription;
+
+    VkDescriptorPool _descriptorPool;
+    VkDescriptorSet _descriptorSet;
+    VkDescriptorSetLayout _descriptorSetLayout;
+
+    std::vector<VkPipelineShaderStageCreateInfo> _shaderStages;
+
+    VkPipelineLayout _pipelineLayout;
+    VkPipelineCache _pipelineCache;
+    VkPipeline _vkPipeline;
+
+    vulkanBuffer* _frameUbo;
+    vulkanBuffer* _verticesBuffer;
+    vulkanBuffer* _indicesBuffer;
 public:
-    std::vector<VkDescriptorSetLayoutBinding> layoutBindings;
-    std::vector<VkVertexInputBindingDescription> vertexInputBindingDescription;
-    std::vector<VkVertexInputAttributeDescription> vertexInputAttributesDescription;
-
-    VkDescriptorPool descriptorPool;
-    VkDescriptorSet descriptorSet;
-    VkDescriptorSetLayout descriptorSetLayout;
-
-    VkPipelineShaderStageCreateInfo shaderStages[2];
     VkRenderPass renderPass;
-
-    VkPipelineLayout pipelineLayout;
-    VkPipelineCache pipelineCache;
-    VkPipeline vkPipeline;
-
-    vulkanBuffer* frameUniformsUbo;
-    vulkanBuffer* verticesBuffer;
-    vulkanBuffer* indicesBuffer;
 private:
-    void createUniformBuffer();
+    void createVao();
+    void createFrameUbo();
     void createRenderpass();
-    void createShaders(std::string vertexShader, std::string fragmentShader);
-
-    void createVertexBuffer();
-    void createPipelineLayouts();
+    void createShaderStages();
     void createDescriptorPool();
+    void createDescriptorSetsLayout();
     void createDescriptorSets();
+    void writeDescriptorSets();
+    void createPipelineLayouts();
     void createPipelineCache();
     void createPipeline();
-    void updateDescriptorSets();
 public:
     vulkanPipeline(vulkanDevice* vulkanDevice);
     ~vulkanPipeline();
 
     void bindTo(VkCommandBuffer & commandBuffer);
-    void updateFrameUniformsBuffer(glm::mat4 mvp);
-    void updateVertexBuffer(std::vector<mesh*>& renderList);
+    void updateFrameUniformsBuffer(glm::mat4& vp);
+    void updateVerticesBuffer(void* data, size_t dataSize);
+    void updateIndicesBuffer(void* data, size_t dataSize);
 };
