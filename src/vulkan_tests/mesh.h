@@ -30,6 +30,28 @@ public:
         std::vector<vertex> vertices;;
         std::vector<unsigned int> indices;;
 
+        //             __________________________
+        //            /|ltb                  rtb/|
+        //           / |                       / |
+        //          /  |                      /  |
+        //         /   |                     /   |
+        //        /    |                    /    |
+        //       /     |                   /     |
+        //      /      |                  /      |
+        //     /       |                 /       |
+        //    /_________________________/        |
+        //    |ltf     |             rtf|        |
+        //    |        |________________|________|
+        //    |       /lbb              |     rbb/
+        //    |      /                  |       /
+        //    |     /                   |      /
+        //    |    /                    |     /
+        //    |   /                     |    /
+        //    |  /                      |   /
+        //    | /                       |  /
+        //    |/lbf                  rbf| /
+        //    |_________________________|/
+
         auto lbb = glm::vec3(-0.5f, -0.5f, -0.5f);
         auto lbf = glm::vec3(-0.5f, -0.5f, 0.5f);
         auto ltf = glm::vec3(-0.5f, 0.5f, 0.5f);
@@ -118,95 +140,5 @@ public:
                                                     0.0f, 1.0f, 0.0f, 0.0f,
                                                     0.0f, 0.0f, 1.0f, 0.0f,
                                                     0.0f, 0.0f, 0.0f, 1.0f));
-
-        //auto lbb = glm::vec3(-0.5f, -0.5f, -0.5f);
-        //auto lbf = glm::vec3(-0.5f, -0.5f, 0.5f);
-        //auto ltf = glm::vec3(-0.5f, 0.5f, 0.5f);
-        //auto ltb = glm::vec3(-0.5f, 0.5f, -0.5f);
-        //auto rbb = glm::vec3(0.5f, -0.5f, -0.5f);
-        //auto rbf = glm::vec3(0.5f, -0.5f, 0.5f);
-        //auto rtf = glm::vec3(0.5f, 0.5f, 0.5f);
-        //auto rtb = glm::vec3(0.5f, 0.5f, -0.5f);
-
-        //auto rightNormal = glm::vec3(1.0f, 0.0f, 0.0f);
-        //auto leftNormal = glm::vec3(-1.0f, 0.0f, 0.0f);
-        //auto upNormal = glm::vec3(0.0f, 1.0f, 0.0f);
-        //auto bottomNormal = glm::vec3(0.0f, -1.0f, 0.0f);
-        //auto frontNormal = glm::vec3(0.0f, 0.0f, 1.0f);
-        //auto backNormal = glm::vec3(0.0f, 0.0f, -1.0f);
-
-        //auto vertices = std::vector<vertex>();
-
-        //////             __________________________
-        //////            /|ltb                  rtb/|
-        //////           / |                       / |
-        //////          /  |                      /  |
-        //////         /   |                     /   |
-        //////        /    |                    /    |
-        //////       /     |                   /     |
-        //////      /      |                  /      |
-        //////     /       |                 /       |
-        //////    /_________________________/        |
-        //////    |ltf     |             rtf|        |
-        //////    |        |________________|________|
-        //////    |       /lbb              |     rbb/
-        //////    |      /                  |       /
-        //////    |     /                   |      /
-        //////    |    /                    |     /
-        //////    |   /                     |    /
-        //////    |  /                      |   /
-        //////    | /                       |  /
-        //////    |/lbf                  rbf| /
-        //////    |_________________________|/
-
-        ////front
-        //vertices.push_back(vertex(lbf, frontNormal));
-        //vertices.push_back(vertex(rbf, frontNormal));
-        //vertices.push_back(vertex(ltf, frontNormal));
-        //vertices.push_back(vertex(rbf, frontNormal));
-        //vertices.push_back(vertex(rtf, frontNormal));
-        //vertices.push_back(vertex(ltf, frontNormal));
-
-        ////right
-        //vertices.push_back(vertex(rbf, rightNormal));
-        //vertices.push_back(vertex(rbb, rightNormal));
-        //vertices.push_back(vertex(rtb, rightNormal));
-        //vertices.push_back(vertex(rtb, rightNormal));
-        //vertices.push_back(vertex(rtf, rightNormal));
-        //vertices.push_back(vertex(rbf, rightNormal));
-
-        ////left
-        //vertices.push_back(vertex(lbf, leftNormal));
-        //vertices.push_back(vertex(ltf, leftNormal));
-        //vertices.push_back(vertex(ltb, leftNormal));
-        //vertices.push_back(vertex(ltb, leftNormal));
-        //vertices.push_back(vertex(lbb, leftNormal));
-        //vertices.push_back(vertex(lbf, leftNormal));
-
-        //// back
-        //vertices.push_back(vertex(ltb, backNormal));
-        //vertices.push_back(vertex(rtb, backNormal));
-        //vertices.push_back(vertex(rbb, backNormal));
-        //vertices.push_back(vertex(rbb, backNormal));
-        //vertices.push_back(vertex(lbb, backNormal));
-        //vertices.push_back(vertex(ltb, backNormal));
-
-        ////bottom
-        //vertices.push_back(vertex(lbf, bottomNormal));
-        //vertices.push_back(vertex(lbb, bottomNormal));
-        //vertices.push_back(vertex(rbb, bottomNormal));
-        //vertices.push_back(vertex(rbb, bottomNormal));
-        //vertices.push_back(vertex(rbf, bottomNormal));
-        //vertices.push_back(vertex(lbf, bottomNormal));
-
-        ////up
-        //vertices.push_back(vertex(ltb, upNormal));
-        //vertices.push_back(vertex(ltf, upNormal));
-        //vertices.push_back(vertex(rtf, upNormal));
-        //vertices.push_back(vertex(rtf, upNormal));
-        //vertices.push_back(vertex(rtb, upNormal));
-        //vertices.push_back(vertex(ltb, upNormal));
-
-        //return new mesh(vertices);
     }
 };
